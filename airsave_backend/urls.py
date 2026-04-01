@@ -16,8 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from wallet.views import UserProfileView
+from analytics.views import DashboardAnalyticsView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/wallet/', include('wallet.urls')),
+    path('api/auth/', include('core.urls')),
+    path('api/profile/', UserProfileView.as_view(), name='user-profile'),
+    path('api/analytics/dashboard/', DashboardAnalyticsView.as_view(), name='dashboard-analytics'),
 ]
