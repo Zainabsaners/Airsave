@@ -1,5 +1,6 @@
 from django.db.models import Sum, Count
-from wallet.models import Ledger
+from wallet.models import Ledger, Wallet
+from payments.models import MpesaTransaction
 from decimal import Decimal
 
 def calculate_saving_metrics(user):
@@ -35,4 +36,23 @@ def calculate_saving_metrics(user):
         "total_saved": total_saved,
         "frequency": freq,
         "discipline_score": final_score
+    }
+    
+def get_system_wide_stats():
+    # 1. Total Liability (The sum of all user balances)
+    total_user_balances = Wallet.objects.aggregate(Sum('balance'))['balance__sum'] or Decimal('0.00')
+
+    # 2. Total Airtime Volume (Gross transaction volume)
+    total_volume = MpesaTransaction.objects.filter(status='SUCCESS').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+
+    # 3. Total Savings Captured (Sum of all Round-ups)
+    total_savings = Ledger.objects.filter(entry_type='ROUNDUP').aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
+
+    # 4. System Liquidity Check
+    # In a real scenario, you'd compare this to your M-Pesa API balance
+    return {
+        "total_liability": total_user_balances,
+        "total_airtime_processed": total_volume,
+        "total_savings_trapped": total_savings,
+        "active_users": Wallet.objects.count(),
     }

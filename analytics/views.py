@@ -6,6 +6,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .services import calculate_saving_metrics
 from .models import SavingGoal
+from rest_framework.permissions import IsAdminUser # 🔒 Only Staff/Admins
+from .services import get_system_wide_stats
+from datetime import datetime
 
 class DashboardAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -25,4 +28,15 @@ class DashboardAnalyticsView(APIView):
         return Response({
             "metrics": metrics,
             "goals": goal_data
+        })
+        
+class SystemHealthView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        stats = get_system_wide_stats()
+        return Response({
+            "system_status": "OPERATIONAL",
+            "timestamp": datetime.now(),
+            "financial_stats": stats,
         })
