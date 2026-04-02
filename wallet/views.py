@@ -7,9 +7,11 @@ from rest_framework import status
 from decimal import Decimal
 import math
 from rest_framework.permissions import IsAuthenticated
-from .models import Wallet, Ledger
+from .models import Wallet, Ledger, WithdrawalRequest
 from .serializers import WalletSerializer
-
+from django.db import transaction
+from payments.utils import MpesaClient
+from core.models import AuditLog
 class RoundUpPreviewView(APIView):
     """
     Endpoint: /api/wallet/preview-roundup/
@@ -69,3 +71,60 @@ class UserProfileView(APIView):
                 } for entry in recent_savings
             ]
         })
+        
+class WithdrawFundsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        amount = Decimal(request.data.get('amount', 0))
+        user = request.user
+
+        if amount < 10: # Minimum withdrawal rule
+            return Response({"error": "Minimum withdrawal is 10 KES"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # 1. LOCK the wallet row for the duration of this logic
+                wallet = Wallet.objects.select_for_update().get(user=user)
+
+                # 2. Verify Funds
+                if wallet.balance < amount:
+                    return Response({"error": "Insufficient balance"}, status=status.HTTP_400_BAD_REQUEST)
+
+                # 3. Create Pending Withdrawal Record
+                withdrawal = WithdrawalRequest.objects.create(user=user, amount=amount)
+
+                # 4. Deduct immediately (Optimistic Locking)
+                # If M-Pesa fails later, we will have a 'Reversal' logic
+                wallet.balance -= amount
+                wallet.save()
+
+                # 5. Record in Ledger
+                Ledger.objects.create(
+                    wallet=wallet,
+                    amount=amount,
+                    entry_type='WITHDRAWAL',
+                    reference_id=f"WDL-{withdrawal.id}",
+                    description=f"Withdrawal to {user.phone_number}"
+                )
+
+                # 6. Trigger M-Pesa B2C
+                client = MpesaClient()
+                mpesa_response = client.initiate_b2c_payout(user.phone_number, amount)
+                
+                AuditLog.objects.create(
+                    user=user,
+                    action="WITHDRAWAL_INITIATED",
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    details={"amount": str(amount), "status": "PENDING"}
+                )
+
+                return Response({
+                    "message": "Withdrawal initiated. You will receive an M-Pesa message shortly.",
+                    "request_id": withdrawal.id,
+                    "mpesa_status": mpesa_response
+                })
+    
+
+        except Exception as e:
+            return Response({"error": "System error during withdrawal"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
