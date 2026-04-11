@@ -9,7 +9,8 @@ services:
         value: 3.12.3
       - key: DEBUG
         value: "False"
-      - fromDatabase:
+      - key: DATABASE_URL  # <--- Add this line
+        fromDatabase:
           name: airsave-db
           property: connectionString
 
