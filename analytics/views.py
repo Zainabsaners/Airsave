@@ -9,7 +9,7 @@ from .models import SavingGoal
 from rest_framework.permissions import IsAdminUser # 🔒 Only Staff/Admins
 from .services import get_system_wide_stats
 from datetime import datetime
-
+from .models import UserSavingsAnalytics
 class DashboardAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -40,3 +40,18 @@ class SystemHealthView(APIView):
             "timestamp": datetime.now(),
             "financial_stats": stats,
         })
+        
+class SavingsSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            stats = UserSavingsAnalytics.objects.get(user=request.user)
+            return Response({
+                "username": request.user.username,
+                "total_airtime": stats.total_spent_on_airtime,
+                "total_savings": stats.total_saved,
+                "savings_ratio": f"{(stats.total_saved / (stats.total_saved + stats.total_airtime) * 100):.1f}%"
+            })
+        except UserSavingsAnalytics.DoesNotExist:
+            return Response({"message": "No data yet. Start saving!"}, status=200)
