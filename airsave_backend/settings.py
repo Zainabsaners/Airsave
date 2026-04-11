@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from decouple import config
 import dj_database_url
-
+from dj_database_url import parse as db_url
 load_dotenv()
 
 # Build paths inside the project
@@ -17,18 +17,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1', 
-    '.onrender.com', # For Render deployment
-    'airsave.vercel.app', # For Glen's Frontend
+    'glamour-askew-footwork.ngrok-free.dev',
+    '.onrender.com',
+    'airsave.vercel.app', 
 ]
 
 # Application definition
 INSTALLED_APPS = [
-    'jazzmin',  # Must be ABOVE django.contrib.admin
+    'jazzmin',  
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -80,8 +81,9 @@ CORS_ALLOWED_ORIGINS = [
 #]
 
 CSRF_TRUSTED_ORIGINS = [
-    #'https://*.onrender.com', 
-    #'https://airsave.vercel.app', 
+    'https://*.onrender.com', 
+    'https://airsave.vercel.app', 
+    'https://glamour-askew-footwork.ngrok-free.dev',
     'http://localhost:5173', 
 ]
 
@@ -135,13 +137,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'airsave_backend.wsgi.application'
 
-# Database Configuration (Connected via dj_database_url)
-DATABASES = {
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Check if we are running on Render (Render sets the DATABASE_URL env var)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Use Postgres on Render
+    DATABASES = {
     'default': dj_database_url.config(
-        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        default=os.environ.get('DATABASE_URL'),
         conn_max_age=600,
     )
 }
+else:
+    # Keep SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -158,6 +174,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

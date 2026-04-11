@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: airsave-backend
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn airsave_backend.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DEBUG
+        value: "False"
+      - fromDatabase:
+          name: airsave-db
+          property: connectionString
+
+databases:
+  - name: airsave-db
+    plan: free

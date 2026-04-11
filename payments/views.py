@@ -16,6 +16,7 @@ from .models import MpesaTransaction
 from wallet.models import Wallet, Ledger
 from .security import whitelist_mpesa_ip
 from wallet.services import calculate_split # Ensure you created this service
+from rest_framework.permissions import IsAuthenticated
 
 # --- Mock Telecom Service ---
 def call_telecom_provider_api(phone, amount):
@@ -27,55 +28,34 @@ def call_telecom_provider_api(phone, amount):
     return True # Simulate success
 
 class InitiateSTKPushView(APIView):
+    # Ensure this is set so request.user works
+    permission_classes = [IsAuthenticated] 
+
     def post(self, request):
+        # 1. Get data from request
         phone = request.data.get('phone')
         amount = request.data.get('amount')
         
-        # Security: Save the pending transaction so we can verify it in the callback
-        # We assume the user is authenticated via JWT
-        MpesaTransaction.objects.create(
-            user=request.user,
-            phone_number=phone,
-            amount=Decimal(amount),
-            checkout_request_id="PENDING_" + datetime.now().strftime('%Y%m%d%H%M%S'), # Will be updated by real response
-            status='PENDING'
-        )
+        if not phone or not amount:
+            return Response({"error": "Phone and amount are required"}, status=400)
 
+        # 2. Use the Client we already built
         client = MpesaClient()
-        access_token = client.get_access_token()
-        
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        passkey = config('MPESA_PASSKEY')
-        shortcode = config('MPESA_SHORTCODE')
-        password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
+        # Pass phone, amount, and a unique reference
+        res_data = client.stk_push(phone, amount, f"AirSave_{request.user.username}")
 
-        stk_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        
-        payload = {
-            "BusinessShortCode": shortcode,
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": int(amount),
-            "PartyA": phone,
-            "PartyB": shortcode,
-            "PhoneNumber": phone,
-            "CallBackURL": config('MPESA_CALLBACK_URL'), # Use .env for this!
-            "AccountReference": "AirSave",
-            "TransactionDesc": "Airtime Purchase with Round-up"
-        }
-
-        response = requests.post(stk_url, json=payload, headers=headers)
-        res_data = response.json()
-
-        # Update the transaction with the real CheckoutRequestID from Safaricom
+        # 3. Handle the response and save to DB
         if res_data.get('ResponseCode') == '0':
-            MpesaTransaction.objects.filter(phone_number=phone, status='PENDING').update(
-                checkout_request_id=res_data.get('CheckoutRequestID')
+            MpesaTransaction.objects.create(
+                user=request.user,
+                phone_number=phone,
+                amount=Decimal(amount),
+                checkout_request_id=res_data.get('CheckoutRequestID'),
+                status='PENDING'
             )
-
-        return Response(res_data)
+            return Response({"message": "STK Push initiated", "checkout_id": res_data.get('CheckoutRequestID')})
+        
+        return Response({"error": "Safaricom rejected the request", "details": res_data}, status=400)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
