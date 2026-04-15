@@ -1,31 +1,25 @@
 from decimal import Decimal
 import math
 
-def calculate_split(total_paid, base=10):
+def calculate_rounding_split(requested_airtime):
     """
-    Logic: The user pays a round number (e.g., 50). 
-    We find the 'Actual Airtime' by subtracting the roundup.
-    
-    Example 1: Paid 50. Nearest 10 below 50 is 40? No. 
-    In your team's model: 47 becomes 50. So if they paid 50, 
-    the savings is 3 and airtime is 47.
+    Option A: Round up to nearest 10. 
+    If already a multiple of 10, savings = 0.
     """
-    total = Decimal(str(total_paid))
+    # If it's already 50, 50 % 10 is 0. 
+    # If it's 42, 42 % 10 is 2.
+    remainder = requested_airtime % 10
     
-    # We define a standard 'Micro-saving' buffer. 
-    # If they pay 50, we can use a rule like 5% or 
-    # a fixed 'remainder' logic.
+    if remainder == 0:
+        total_to_charge = requested_airtime
+        savings = 0
+    else:
+        # Standard round up: 42 -> 50
+        total_to_charge = math.ceil(requested_airtime / 10.0) * 10
+        savings = total_to_charge - requested_airtime
     
-    # Common Rounding Rule for AirSave:
-    # Savings = total_paid % base. 
-    # If remainder is 0 (e.g., 50), we take a default small amount (e.g., 2 KES)
-    # so they always save something.
-    
-    savings = total % Decimal(str(base))
-    
-    if savings == 0:
-        savings = Decimal('2.00') # Default "Nudge" if they pay exactly 10, 20, 50
-        
-    airtime_value = total - savings
-    
-    return airtime_value, savings
+    return {
+        "total_m_pesa_charge": total_to_charge,
+        "airtime_to_send": requested_airtime,
+        "savings_amount": savings
+    }

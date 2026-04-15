@@ -15,7 +15,7 @@ from .utils import MpesaClient
 from .models import MpesaTransaction
 from wallet.models import Wallet, Ledger
 from .security import whitelist_mpesa_ip
-from wallet.services import calculate_split # Ensure you created this service
+from wallet.services import calculate_rounding_split
 from rest_framework.permissions import IsAuthenticated
 
 # --- Mock Telecom Service ---
@@ -78,7 +78,9 @@ def mpesa_callback(request):
         # --- THE SPLIT LOGIC START ---
         # 1. Calculate how much is Airtime vs Savings
         # Example: User paid 50. Airtime = 47, Savings = 3.
-        airtime_amount, savings_amount = calculate_split(mpesa_tx.amount)
+        split = calculate_rounding_split(mpesa_tx.requested_amount)
+        airtime_amount = split["airtime_to_send"]
+        savings_amount = split["savings_amount"]
 
         try:
             with transaction.atomic():
