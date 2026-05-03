@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: airsave-backend
+    env: python
+    plan: free # Explicitly setting the free tier for the web service
+    buildCommand: ./build.sh
+    startCommand: gunicorn airsave_backend.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DEBUG
+        value: "False"
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: Airsave  # Change this if you want
+      - key: DJANGO_SUPERUSER_PASSWORD
+        value: cherotich@2005 # Use a secure password
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@airsave.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: airsave-db
+          property: connectionString
+databases:
+  - name: airsave-db
+    plan: free # Explicitly setting the free tier for the database
