@@ -8,20 +8,17 @@ python manage.py migrate
 # This will print the live users to your Render Logs so you can see them!
 echo "--- STARTING LIVE USER LIST ---"
 python manage.py shell -c "
-from core.models import User;
+from django.contrib.auth import get_user_model;
 
-users = User.objects.all();
+User = get_user_model();
 
-print('===== USERS =====');
-
-for u in users:
-    print({
-        'username': u.username,
-        'email': u.email,
-        'is_superuser': u.is_superuser,
-        'is_staff': u.is_staff
-    });
-
-print('===== END USERS =====');
+if not User.objects.filter(username='Airsave').exists():
+    User.objects.create_superuser(
+        username='Airsave',
+        email='airsave@gmail.com',
+        password='Airsave@123'
+    );
+    print('Superuser created');
+else:
+    print('Superuser already exists');
 "
-echo "--- ENDING LIVE USER LIST ---"
