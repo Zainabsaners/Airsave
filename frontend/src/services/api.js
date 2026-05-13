@@ -1,8 +1,5 @@
 import axios from "axios";
-
-const apiBaseUrl = import.meta.env.PROD
-  ? import.meta.env.VITE_API_BASE_URL || "https://airsave-lg67.onrender.com/api"
-  : import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const apiBaseUrl = "http://127.0.0.1:8000/api";
 
 const sessionTokenKey = "airsave-token";
 const persistentTokenKey = "airsave-token-persistent";
@@ -63,7 +60,7 @@ function emitAuthExpired() {
   window.dispatchEvent(new Event(authEventName));
 }
 
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = false;
 
 const API = axios.create({
   baseURL: apiBaseUrl,
@@ -121,19 +118,24 @@ async function requestData(request, transform = (data) => data) {
 }
 
 function persistTokenFromResponse(data, remember = false) {
-  const token = data?.token;
+  const token = data?.access || data?.token; 
   if (token) {
     storeAuthToken(token, remember);
   }
   return data;
 }
-
 export async function loginUser(payload, options = {}) {
-  return requestData(API.post("/auth/login", payload, { withCredentials: true }), (data) => persistTokenFromResponse(data, options.rememberMe));
+  return requestData(
+    API.post("/auth/login/", payload), // Added trailing slash (Django style)
+    (data) => persistTokenFromResponse(data, options.rememberMe)
+  );
 }
 
 export async function registerUser(payload, options = {}) {
-  return requestData(API.post("/auth/register", payload, { withCredentials: true }), (data) => persistTokenFromResponse(data, options.rememberMe));
+  return requestData(
+    API.post("/auth/register/", payload), 
+    (data) => persistTokenFromResponse(data, options.rememberMe)
+  );
 }
 
 export async function logoutUser() {
@@ -200,16 +202,12 @@ export async function getSavingsActivity() {
 }
 
 export async function initiatePayment(payload) {
-  return requestData(API.post("/transactions/payments/initiate", payload, { withCredentials: true }), (data) => ({
+  return requestData(API.post("/payments/initiate/", payload), (data) => ({
     ...data,
     status: data?.status || "pending",
-    message: data?.message || "STK push sent",
-    paymentReference:
-      data?.paymentReference ||
-      data?.reference ||
-      data?.transactionReference ||
-      data?.checkoutRequestId ||
-      null,
+    // Match the fields we created in the MpesaTransaction model
+    totalAmount: data?.total_amount,
+    savings: data?.savings_amount
   }));
 }
 

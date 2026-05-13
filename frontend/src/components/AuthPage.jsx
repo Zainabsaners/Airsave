@@ -287,15 +287,15 @@ export default function AuthPage({ defaultTab = "login" }) {
     setAuthState({ loading: true, error: "", success: "" });
 
     try {
+      const emailValue = registerEmail.trim().toLowerCase();
       const trimmedIdentifier =
         loginMethod === "phone" ? `+254${getKenyanPhoneDigits(loginIdentifier)}` : loginIdentifier.trim();
-      await loginUser(
-        {
-          emailOrPhone: trimmedIdentifier,
-          password: loginPassword,
-        },
-        { rememberMe }
-      );
+      await loginUser({
+      username: emailValue,
+      email: loginMethod === "email" ? trimmedIdentifier : undefined,
+      phone_number: loginMethod === "phone" ? trimmedIdentifier : undefined,
+      password: loginPassword,
+    }, { rememberMe });
 
       if (rememberMe) {
         localStorage.setItem(rememberedIdentifierKey, trimmedIdentifier);
@@ -335,9 +335,11 @@ export default function AuthPage({ defaultTab = "login" }) {
     setAuthState({ loading: true, error: "", success: "" });
 
     try {
+      const emailValue = registerEmail.trim().toLowerCase();
       await registerUser(
         {
-          fullName: registerFullName.trim(),
+          username: emailValue,
+          full_name: registerFullName.trim(),
           email: registerEmail.trim().toLowerCase(),
           phone: `+254${getKenyanPhoneDigits(registerPhone)}`,
           password: registerPassword,
