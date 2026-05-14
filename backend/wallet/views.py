@@ -128,3 +128,13 @@ class WithdrawFundsView(APIView):
 
         except Exception as e:
             return Response({"error": "System error during withdrawal"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class GoalsListView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        return Response([]) 
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        return Response([])

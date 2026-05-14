@@ -1,8 +1,13 @@
 from django.urls import path
-from .views import RoundUpPreviewView, WithdrawFundsView
+from .views import (
+    RoundUpPreviewView, WithdrawFundsView, 
+    UserProfileView, GoalsListView, NotificationListView
+)
 
 urlpatterns = [
-    path('preview-roundup/', RoundUpPreviewView.as_view(), name='preview-roundup'),
-    path('preview/', RoundUpPreviewView.as_view(), name='preview-roundup'), 
-    path('withdraw/', WithdrawFundsView.as_view(), name='withdraw-funds'),
+    path('', UserProfileView.as_view(), name='wallet-detail'), 
+    path('preview-roundup/', RoundUpPreviewView.as_view()),
+    path('withdraw/', WithdrawFundsView.as_view()),
+    path('goals/', GoalsListView.as_view()),
+    path('notifications/', NotificationListView.as_view()),
 ]
