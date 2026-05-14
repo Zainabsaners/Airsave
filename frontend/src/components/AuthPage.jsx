@@ -287,13 +287,10 @@ export default function AuthPage({ defaultTab = "login" }) {
     setAuthState({ loading: true, error: "", success: "" });
 
     try {
-      const emailValue = registerEmail.trim().toLowerCase();
       const trimmedIdentifier =
         loginMethod === "phone" ? `+254${getKenyanPhoneDigits(loginIdentifier)}` : loginIdentifier.trim();
       await loginUser({
-      username: emailValue,
-      email: loginMethod === "email" ? trimmedIdentifier : undefined,
-      phone_number: loginMethod === "phone" ? trimmedIdentifier : undefined,
+      username: trimmedIdentifier,
       password: loginPassword,
     }, { rememberMe });
 

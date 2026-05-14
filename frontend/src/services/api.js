@@ -147,11 +147,12 @@ export async function logoutUser() {
 }
 
 export async function getCurrentUser() {
-  if (!hasStoredToken()) {
-    return null;
-  }
-  return requestData(API.get("/auth/me", { withCredentials: true }), (data) => data.user || null);
+  if (!hasStoredToken()) return null;
+  return requestData(API.get("/profile/"), (data) => {
+    return data.user || data || null;
+  });
 }
+   
 
 export async function updateCurrentUser(payload) {
   return requestData(API.patch("/auth/me", payload, { withCredentials: true }), (data) => data.user || null);
@@ -170,7 +171,7 @@ export async function resetPassword(payload) {
 }
 
 export async function getWallet() {
-  return requestData(API.get("/wallet", { withCredentials: true }));
+  return requestData(API.get("/wallet/"));
 }
 
 export async function getGoals() {
@@ -194,11 +195,11 @@ export async function deleteGoal(id) {
 }
 
 export async function getTransactions() {
-  return requestData(API.get("/wallet/transactions", { withCredentials: true }), (data) => data.transactions || []);
+  return requestData(API.get("/wallet/transactions/"), (data) => data.transactions || data || []);
 }
 
 export async function getSavingsActivity() {
-  return requestData(API.get("/transactions/activity", { withCredentials: true }));
+  return requestData(API.get("/analytics/dashboard/"));
 }
 
 export async function initiatePayment(payload) {
@@ -220,7 +221,8 @@ export async function submitWithdrawal(payload) {
 }
 
 export async function getNotifications() {
-  return requestData(API.get("/notifications", { withCredentials: true }));
+  //return requestData(API.get("/notifications", { withCredentials: true }));
+  return [];
 }
 
 export async function markNotificationRead(id) {
