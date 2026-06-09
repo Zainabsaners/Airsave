@@ -24,7 +24,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1', 
     'glamour-askew-footwork.ngrok-free.dev',
     '.onrender.com',
-    'airsave.vercel.app', 
+    '.vercel.app', 
 ]
 
 # Application definition
@@ -82,7 +82,7 @@ CORS_ALLOWED_ORIGINS = [
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com', 
-    'https://airsave.vercel.app', 
+    'https://*.vercel.app', 
     'https://glamour-askew-footwork.ngrok-free.dev',
     'http://localhost:5173', 
 ]

@@ -12,6 +12,7 @@ from .serializers import WalletSerializer
 from django.db import transaction
 from payments.utils import MpesaClient
 from core.models import AuditLog
+from analytics.models import SavingGoal
 class RoundUpPreviewView(APIView):
     """
     Endpoint: /api/wallet/preview-roundup/
@@ -19,7 +20,8 @@ class RoundUpPreviewView(APIView):
     """
     def post(self, request):
         amount = Decimal(request.data.get('amount', 0))
-        base = int(request.data.get('base', 10)) # Default to nearest 10
+        active_goal = SavingGoal.objects.filter(user=request.user, is_active=True).first()
+        base = active_goal.roundup_base if active_goal else 10
 
         if amount <= 0:
             return Response({"error": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
@@ -71,6 +73,18 @@ class UserProfileView(APIView):
                 } for entry in recent_savings
             ]
         })
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        
+        # Update the fields Glen's frontend might send
+        if 'fullName' in data:
+            user.username = data['fullName'] # Or user.full_name if you have that field
+        if 'email' in data:
+            user.email = data['email']
+            
+        user.save()
+        return Response({"message": "Profile updated", "user": {"username": user.username, "email": user.email}})
         
 class WithdrawFundsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -129,12 +143,3 @@ class WithdrawFundsView(APIView):
         except Exception as e:
             return Response({"error": "System error during withdrawal"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-class GoalsListView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        return Response([]) 
-
-class NotificationListView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        return Response([])

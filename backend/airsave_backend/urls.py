@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/auth/', include('core.urls')),
     path('api/payments/', include('payments.urls')), 
     path('api/analytics/', include('analytics.urls')),
+    path('api/goals/', include('analytics.urls')),
     path('api/profile/', UserProfileView.as_view(), name='user-profile'),
     path('api/analytics/dashboard/', DashboardAnalyticsView.as_view(), name='dashboard-analytics'),
 ]

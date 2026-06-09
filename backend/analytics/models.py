@@ -6,6 +6,8 @@ class SavingGoal(models.Model):
     name = models.CharField(max_length=100) # e.g., "School Fees", "New Phone"
     target_amount = models.DecimalField(max_digits=10, decimal_places=2)
     current_saved = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    roundup_base = models.IntegerField(default=10)
+    is_active = models.BooleanField(default=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
